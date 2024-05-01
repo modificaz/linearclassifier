@@ -66,7 +66,7 @@ double RandVal(double,double);
 void evaluate(void);
 void copy_genotypes(struct genotype*, struct genotype*);
 void copy_population(struct genotype old_pop[POPSIZE+1], struct genotype new_pop[POPSIZE+1]);
-void select(void);
+void select_ga(void);
 void crossover(void);
 void mutate(void);
 void report(void);

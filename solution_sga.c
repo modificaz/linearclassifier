@@ -309,7 +309,7 @@ void copy_population(struct genotype old_pop[POPSIZE+1],struct genotype new_pop[
 /* It also checks to make sure that the best member survives    */
 /* (i.e., elitest selection).                                   */
 /*                                                              */
-void select(void)
+void select_ga(void)
 {
   	int    member, spin_num, mem; /* Some counter variables       */
   	double Total_Fitness;       /* The total population fitness */
@@ -532,7 +532,7 @@ int main(void)
   	evaluate();
   	while(Generation<MAXGENS){
     	Generation++;
-    	select();
+    	select_ga();
     	crossover();
     	mutate();
     	evaluate();
