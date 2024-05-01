@@ -149,7 +149,7 @@ double linearClassifier(int member)
 	double fitnessValue;		 // value of fitness
 
 	/* choose random initial weights  */
-	for (i = 0; i < 200; i++)
+	for (i = 0; i < 6; i++)
 	{
 		weights[i] = (double)rand() / RAND_MAX;
 	}
