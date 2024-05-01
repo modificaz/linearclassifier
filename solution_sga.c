@@ -208,7 +208,7 @@ double linearClassifier(int member)
 				{
 					for (j = 0; j < 5; j++)
 					{
-						weights[j] = weights[j] + (double)(learning_rate / 1000) * (double)(labels[randomOrder[i]] - y) * (double)X[j] / 2;
+						weights[j] = weights[j] + (double)(learning_rate / 1000) * (double)(labels[randomOrder[i]] - y) * (double)data[X[j]][randomOrder[i]] / 2;
 					}
 				}
 			}
