@@ -16,18 +16,18 @@
 
 double linearClassifier(int X[INPUT_SIZE], int data[][SAMPLES], int *labels)
 {
-	int epochs = 0;			 // number of training steps
-	double learning_rate = LEARNING_RT;	 // starting learning rate(reduced by LEARNING_RT_DCR every loop)
-	static int randomOrder[SAMPLES]; // list of numbers 0-199 in random order
-	double weights[INPUT_SIZE+1];// perceptron weights
-	int i, j;					 // counters
-	int training_correct = 0;	 // correct matches in training set
-	int validation_correct = 0;	 // correct matches in validation set
-	int overtraining = 0;		 // overtraining counter/flag
-	double fitnessValue;		 // value of fitness
+	int epochs = 0;						// number of training steps
+	double learning_rate = LEARNING_RT; // starting learning rate(reduced by LEARNING_RT_DCR every loop)
+	static int randomOrder[SAMPLES];	// list of numbers 0-199 in random order
+	double weights[INPUT_SIZE + 1];		// perceptron weights
+	int i, j;							// counters
+	int training_correct = 0;			// correct matches in training set
+	int validation_correct = 0;			// correct matches in validation set
+	int overtraining = 0;				// overtraining counter/flag
+	double fitnessValue;				// value of fitness
 
 	/* choose random initial weights  */
-	for (i = 0; i < INPUT_SIZE+1; i++)
+	for (i = 0; i < INPUT_SIZE + 1; i++)
 	{
 		weights[i] = (double)rand() / RAND_MAX;
 	}
@@ -55,24 +55,30 @@ double linearClassifier(int X[INPUT_SIZE], int data[][SAMPLES], int *labels)
 		for (i = 0; i < SAMPLES; i++)
 		{
 			/* check where they are categorized correctly */
-			int y;
-			if (((weights[0] * data[X[0]][randomOrder[i]]) + (weights[1] * data[X[1]][randomOrder[i]]) + (weights[2] * data[X[2]][randomOrder[i]]) + (weights[3] * data[X[3]][randomOrder[i]]) + (weights[4] * data[X[4]][randomOrder[i]]) - weights[5]) < 0)
+			int row = randomOrder[i];
+			int output;
+			if  ((weights[0] * data[X[0]][row] +
+			      weights[1] * data[X[1]][row] +
+				  weights[2] * data[X[2]][row] +
+				  weights[3] * data[X[3]][row] +
+				  weights[4] * data[X[4]][row] - weights[5]) < 0)
 			{
-				y = -1;
+				output = -1;
 			}
 			else
 			{
-				y = 1;
+				output = 1;
 			}
 			/* if they are categorized wrongly */
-			if (y != labels[randomOrder[i]])
+			int target = labels[row];
+			if (output != target)
 			{
 				/* if is part of training set */
 				if (i < TRAINING_SAMPLES)
 				{
 					for (j = 0; j < INPUT_SIZE; j++)
 					{
-						weights[j] = weights[j] + (double)(learning_rate / INPUT_SCL_FCT) * (double)(labels[randomOrder[i]] - y) * (double)data[X[j]][randomOrder[i]] / OUTPT_SCL_FCT;
+						weights[j] += learning_rate * ((double)(target - output) / OUTPT_SCL_FCT) * (double)data[X[j]][row] / INPUT_SCL_FCT;
 					}
 				}
 			}
