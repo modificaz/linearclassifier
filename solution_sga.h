@@ -17,6 +17,14 @@
 #define frand_ab() (2 * ((double)rand() / RAND_MAX) - 1)
 #define frand() ((double)rand() / RAND_MAX)
 
+/* Input files */
+
+#define DATA_COLUMNS    8192	/* Nr of feature vectors */
+#define DATA_ROWS	    200 	/* Nr of samples         */
+
+/* Feature selection */
+# define INPUT_SIZE 5
+
 /* change any of these parameters to match your needs */
 
 #define POPSIZE 200		/* Population size                       */
@@ -31,9 +39,9 @@
 int Generation, /* Curent Generation number                 */
 	Best;		/* The Best genotype in the population      */
 FILE *galog;	/* A log file to write results to           */
-static int sampleSize = 2000;
-static int data[8192][200];
-static int labels[200];
+static int sampleSize = DATA_ROWS;
+static int data[DATA_COLUMNS][DATA_ROWS];
+static int labels[DATA_ROWS];
 
 struct genotype /* Each genotype is a member of      */
 {				/* the population                    */
@@ -58,7 +66,7 @@ struct genotype Best_Individual;
 /* GA function prototypes */
 void readDataFiles(void);
 int *rpermute(int);
-double linearClassifier(int);
+double linearClassifier(int X[INPUT_SIZE], int data[][DATA_ROWS], int *labels);
 void initialize(void);
 double RandVal(double, double);
 void evaluate(void);

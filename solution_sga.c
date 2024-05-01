@@ -132,127 +132,6 @@ void initialize(void)
 	fclose(infile);
 }
 
-/*                      LINEAR CLASSIFIER                         */
-/*                                                                */
-
-double linearClassifier(int member)
-{
-	int iterations = 0;			 // number of training steps
-	double learning_rate = 0.5;	 // starting learning rate(reduced by 0.0049 every loop)
-	static int randomOrder[200]; // list of numbers 0-199 in random order
-	double weights[6];			 // perceptron weights
-	int i, j;					 // counters
-	int X[5];					 // peptides in decimal form
-	int training_correct = 0;	 // correct matches in training set
-	int validation_correct = 0;	 // correct matches in validation set
-	int overtraining = 0;		 // overtraining counter/flag
-	double fitnessValue;		 // value of fitness
-
-	/* choose random initial weights  */
-	for (i = 0; i < 6; i++)
-	{
-		weights[i] = (double)rand() / RAND_MAX;
-	}
-
-	for (i = 0; i < 5; i++)
-	{
-		X[i] = 0;
-	}
-	/* Conversion of binary to decimal in order to find the */
-	/* right peptides                                       */
-	for (i = 0; i < 13; i++)
-	{
-		X[0] = X[0] + (int)Population[member].Gene[i] * pow(2, (12 - i));
-		X[1] = X[1] + (int)Population[member].Gene[i + (1 * 13)] * pow(2, (12 - i));
-		X[2] = X[2] + (int)Population[member].Gene[i + (2 * 13)] * pow(2, (12 - i));
-		X[3] = X[3] + (int)Population[member].Gene[i + (3 * 13)] * pow(2, (12 - i));
-		X[4] = X[4] + (int)Population[member].Gene[i + (4 * 13)] * pow(2, (12 - i));
-	}
-	while (iterations < 100)
-	{
-
-		/* make list of numbers 0-199 in random order */
-		int k;
-		for (k = 0; k < 200; k++)
-		{
-			randomOrder[k] = k;
-		}
-		for (k = 200 - 1; k >= 0; k--)
-		{
-			int j = rand() % (k + 1);
-			int temp = randomOrder[j];
-			randomOrder[j] = randomOrder[k];
-			randomOrder[k] = temp;
-		}
-		/* reset matching values */
-		training_correct = 0;
-		validation_correct = 0;
-		/* for all members of dataset(patients or healthy) */
-		for (i = 0; i < 200; i++)
-		{
-			/* check where they are categorized correctly */
-			int y;
-			if (((weights[0] * data[X[0]][randomOrder[i]]) + (weights[1] * data[X[1]][randomOrder[i]]) + (weights[2] * data[X[2]][randomOrder[i]]) + (weights[3] * data[X[3]][randomOrder[i]]) + (weights[4] * data[X[4]][randomOrder[i]]) - weights[5]) < 0)
-			{
-				y = -1;
-			}
-			else
-			{
-				y = 1;
-			}
-			/* if they are categorized wrongly */
-			if (y != labels[randomOrder[i]])
-			{
-				/* if is part of training set */
-				if (i < 160)
-				{
-					for (j = 0; j < 5; j++)
-					{
-						weights[j] = weights[j] + (double)(learning_rate / 1000) * (double)(labels[randomOrder[i]] - y) * (double)data[X[j]][randomOrder[i]] / 2;
-					}
-				}
-			}
-			/* if they are categorized correctly */
-			else
-			{
-				/* if is part of training set */
-				if (i < 160)
-				{
-					training_correct++;
-				}
-				/* if is part of validation set */
-				else
-				{
-					validation_correct++;
-				}
-			}
-		}
-
-		iterations++;
-		/* reduce learning rate */
-		learning_rate = learning_rate - 0.0049;
-		double mean_training_correct = (double)training_correct / 160;
-		double mean_validation_correct = (double)validation_correct / 40;
-		/* if for 5 turns training set is categorized better that validation */
-		/* then we have overtraining                                         */
-		if (mean_training_correct > mean_validation_correct)
-		{
-			overtraining++;
-			if (overtraining == 5)
-			{
-				break;
-			}
-		}
-		else
-		{
-			overtraining = 0;
-		}
-	}
-	/* fitness funtion is: (total correctly categorized)/(total number) */
-	fitnessValue = ((double)training_correct + (double)validation_correct) / 200;
-	return fitnessValue;
-}
-
 /*              EVALUATE                                        */
 /* is a user defined function.For each problem you solve        */
 /* using this GA, you will modify this function and you         */
@@ -261,24 +140,33 @@ double linearClassifier(int member)
 /*                                                              */
 void evaluate(void)
 {
-	int mem = 0, i = 0;
+	int member = 0, i = 0;
+	int feature_vec[INPUT_SIZE];
 	Best = 0;
-	for (mem = 0; mem < POPSIZE; mem++)
+	for (member = 0; member < POPSIZE; member++)
 	{
+		/* Conversion of binary to decimal in order to find the */
+		/* right peptides                                       */
+        for (int i = 0; i < INPUT_SIZE; i++) {
+			feature_vec[i] = 0;
+            for (int j = 0; j < 13; j++) {
+                feature_vec[i] += ((int)Population[member].Gene[j + (i * 13)]) << (12 - j);
+            }
+        }
 
 		// function to change
-		Population[mem].Fitness = linearClassifier(mem);
+		Population[member].Fitness = linearClassifier(feature_vec, data, labels);
 
 		/* Keep track of the best member of the population  */
 		/* Note that the last member of the population holds*/
 		/* a copy of the best member.                       */
 
-		if (Population[mem].Fitness > Population[POPSIZE].Fitness)
+		if (Population[member].Fitness > Population[POPSIZE].Fitness)
 		{
-			Best = mem;
-			Population[POPSIZE].Fitness = Population[mem].Fitness;
+			Best = member;
+			Population[POPSIZE].Fitness = Population[member].Fitness;
 			for (i = 0; i < NVARS; i++)
-				Population[POPSIZE].Gene[i] = Population[mem].Gene[i];
+				Population[POPSIZE].Gene[i] = Population[member].Gene[i];
 		}
 	}
 }
