@@ -1,6 +1,6 @@
 /*
 						A Simple Genetic Algorithm (SGA)
- 						Created by Stratos Georgopoulos
+						Created by Stratos Georgopoulos
 
   based on the algorithm presented in the book:
   Michalewicz, Z., "Genetic Algorithms + Data Structures = Evolution Programs",
@@ -8,23 +8,24 @@
 
 			  --------------- SGA.C  Source File ---------------
 */
-#include "solution_sga.h"	/* include the sga header file */
-
+#include "solution_sga.h" /* include the sga header file */
 
 /*              RandVal                                 */
 /* returns a pseudorandom value between the supplied    */
 /* low and high arguments.                              */
 /*                                                      */
-double RandVal (double low, double high)
+double RandVal(double low, double high)
 {
-  double temp = ((((double) rand())/RAND_MAX)*(high-low))+low;
-  if(temp<0.5){
-    temp = 0;
-  }
-  else{
-    temp = 1;
-  }
-  return temp;
+	double temp = ((((double)rand()) / RAND_MAX) * (high - low)) + low;
+	if (temp < 0.5)
+	{
+		temp = 0;
+	}
+	else
+	{
+		temp = 1;
+	}
+	return temp;
 }
 
 /*                    readDataFiles                        */
@@ -34,56 +35,55 @@ double RandVal (double low, double high)
 /*                                                         */
 void readDataFiles(void)
 {
-   static const char filename[] = "cancer_data.txt";
-   FILE *file = fopen ( filename, "r" );
-   char *token;
-   int i;
-   int j = 0;
-   if ( file != NULL )
-   {
-      static char line [30000]; /* or other suitable maximum line size */
+	static const char filename[] = "cancer_data.txt";
+	FILE *file = fopen(filename, "r");
+	char *token;
+	int i;
+	int j = 0;
+	if (file != NULL)
+	{
+		static char line[30000]; /* or other suitable maximum line size */
 
-      while ( fgets ( line, sizeof line, file ) != NULL ) /* read a line */
-      {
-           /* get the first token */
-           token = strtok(line, "\t");
-           data[0][j]=atoi(token);
+		while (fgets(line, sizeof line, file) != NULL) /* read a line */
+		{
+			/* get the first token */
+			token = strtok(line, "\t");
+			data[0][j] = atoi(token);
 
-           /* walk through other tokens */
-           for(i=1; i<8192; i++)
-           {
-              token = strtok(NULL, "\t");
-              data[i][j]=atoi(token);
-           }
-           j++;
-      }
-      fclose ( file );
-   }
-   else
-   {
-      perror ( filename ); /* why didn't the file open? */
-   }
-   static const char filename2[] = "cancer_label.txt";
-   file = fopen ( filename2, "r" );
-   j = 0;
-   if ( file != NULL )
-   {
-      static char line [30]; /* or other suitable maximum line size */
-      while ( fgets ( line, sizeof line, file ) != NULL ) /* read a line */
-      {
-           /* get the token */
-           token = strtok(line, "\t");
-           labels[j]=atoi(token);
-           j++;
-      }
-      fclose ( file );
-   }
-   else
-   {
-      perror ( filename2 ); /* why didn't the file open? */
-   }
+			/* walk through other tokens */
+			for (i = 1; i < 8192; i++)
+			{
+				token = strtok(NULL, "\t");
+				data[i][j] = atoi(token);
+			}
+			j++;
+		}
+		fclose(file);
+	}
+	else
+	{
+		perror(filename); /* why didn't the file open? */
+	}
+	static const char filename2[] = "cancer_label.txt";
+	file = fopen(filename2, "r");
+	j = 0;
+	if (file != NULL)
+	{
+		static char line[30];						   /* or other suitable maximum line size */
+		while (fgets(line, sizeof line, file) != NULL) /* read a line */
+		{
+			/* get the token */
+			token = strtok(line, "\t");
+			labels[j] = atoi(token);
+			j++;
+		}
+		fclose(file);
+	}
+	else
+	{
+		perror(filename2); /* why didn't the file open? */
+	}
 }
-
 
 /*              INITIALIZE                                      */
 /* reads in the upper and lower bounds of each variable         */
@@ -99,138 +99,158 @@ void readDataFiles(void)
 /*                                                              */
 void initialize(void)
 {
-	FILE          *infile;
-  	int           i,j;
-  	double        lbound,ubound;
+	FILE *infile;
+	int i, j;
+	double lbound, ubound;
 
 	/* open the input file        */
-  	if ((infile=fopen("gadata.txt","r")) ==NULL ){ /*can't open the input file*/
-	   	fprintf(galog,"\n Cannot open the input file!\n");
-    	exit(-1);
-  	}
+	if ((infile = fopen("gadata.txt", "r")) == NULL)
+	{ /*can't open the input file*/
+		fprintf(galog, "\n Cannot open the input file!\n");
+		exit(-1);
+	}
 
-  	/* Read in the lower and upper bounds for each variable */
-  	for(i=0;i<NVARS;i++){
-    	fscanf(infile,"%lf",&lbound);
-    	fscanf(infile,"%lf",&ubound);
+	/* Read in the lower and upper bounds for each variable */
+	for (i = 0; i < NVARS; i++)
+	{
+		fscanf(infile, "%lf", &lbound);
+		fscanf(infile, "%lf", &ubound);
 
-    	for(j=0;j<=POPSIZE;j++){
-      		Population[j].Lower[i]=lbound;
-      		Population[j].Upper[i]=ubound;
+		for (j = 0; j <= POPSIZE; j++)
+		{
+			Population[j].Lower[i] = lbound;
+			Population[j].Upper[i] = ubound;
+		}
+	}
 
-    	}
-  	}
+	/* Using the lower and upper bounds, randomly         */
+	/* assign a value to each gene of each genotype.      */
+	for (i = 0; i <= POPSIZE; i++)
+		for (j = 0; j < NVARS; j++)
+			Population[i].Gene[j] = RandVal(Population[i].Lower[j], Population[i].Upper[j]);
 
-  	/* Using the lower and upper bounds, randomly         */
-  	/* assign a value to each gene of each genotype.      */
-  	for(i=0;i<=POPSIZE;i++)
-    	for(j=0;j<NVARS;j++)
-      		Population[i].Gene[j] = RandVal(Population[i].Lower[j], Population[i].Upper[j]);
-
-  	fclose(infile);
+	fclose(infile);
 }
-
 
 /*                      LINEAR CLASSIFIER                         */
 /*                                                                */
 
-double linearClassifier(int member){
-    int iterations = 0;          // number of training steps
-    double learning_rate = 0.5;  // starting learning rate(reduced by 0.0049 every loop)
-    static int randomOrder[200]; // list of numbers 0-199 in random order
-    double weights[6];           // perceptron weights
-    int i,j;                     // counters
-    int X[5];                    // peptides in decimal form
-    int training_correct = 0;    // correct matches in training set
-    int validation_correct = 0;  // correct matches in validation set
-    int overtraining = 0;        // overtraining counter/flag
-    double fitnessValue;         // value of fitness
+double linearClassifier(int member)
+{
+	int iterations = 0;			 // number of training steps
+	double learning_rate = 0.5;	 // starting learning rate(reduced by 0.0049 every loop)
+	static int randomOrder[200]; // list of numbers 0-199 in random order
+	double weights[6];			 // perceptron weights
+	int i, j;					 // counters
+	int X[5];					 // peptides in decimal form
+	int training_correct = 0;	 // correct matches in training set
+	int validation_correct = 0;	 // correct matches in validation set
+	int overtraining = 0;		 // overtraining counter/flag
+	double fitnessValue;		 // value of fitness
 
-    /* choose random initial weights  */
-    for(i=0; i<200; i++){
-        weights[i] = (double)rand()/RAND_MAX;
-    }
+	/* choose random initial weights  */
+	for (i = 0; i < 200; i++)
+	{
+		weights[i] = (double)rand() / RAND_MAX;
+	}
 
-    for(i=0; i<5; i++){
-        X[i] = 0;
-    }
-    /* Conversion of binary to decimal in order to find the */
-    /* right peptides                                       */
-    for(i=0; i<13; i++){
-        X[0]=X[0]+(int)Population[member].Gene[i]*pow(2,(12-i));
-        X[1]=X[1]+(int)Population[member].Gene[i+(1*13)]*pow(2,(12-i));
-        X[2]=X[2]+(int)Population[member].Gene[i+(2*13)]*pow(2,(12-i));
-        X[3]=X[3]+(int)Population[member].Gene[i+(3*13)]*pow(2,(12-i));
-        X[4]=X[4]+(int)Population[member].Gene[i+(4*13)]*pow(2,(12-i));
-    }
-    while(iterations < 100){
+	for (i = 0; i < 5; i++)
+	{
+		X[i] = 0;
+	}
+	/* Conversion of binary to decimal in order to find the */
+	/* right peptides                                       */
+	for (i = 0; i < 13; i++)
+	{
+		X[0] = X[0] + (int)Population[member].Gene[i] * pow(2, (12 - i));
+		X[1] = X[1] + (int)Population[member].Gene[i + (1 * 13)] * pow(2, (12 - i));
+		X[2] = X[2] + (int)Population[member].Gene[i + (2 * 13)] * pow(2, (12 - i));
+		X[3] = X[3] + (int)Population[member].Gene[i + (3 * 13)] * pow(2, (12 - i));
+		X[4] = X[4] + (int)Population[member].Gene[i + (4 * 13)] * pow(2, (12 - i));
+	}
+	while (iterations < 100)
+	{
 
-        /* make list of numbers 0-199 in random order */
-        int k;
-        for (k = 0; k < 200; k++){
-            randomOrder[k] = k;
-        }
-        for (k = 200-1; k >= 0; k--) {
-            int j = rand() % (k+1);
-            int temp = randomOrder[j];
-            randomOrder[j] = randomOrder[k];
-            randomOrder[k] = temp;
-        }
-        /* reset matching values */
-        training_correct = 0;
-        validation_correct = 0;
-        /* for all members of dataset(patients or healthy) */
-        for (i = 0; i < 200; i++){
-            /* check where they are categorized correctly */
-            int y;
-            if (((weights[0] * data[X[0]][randomOrder[i]]) + (weights[1] * data[X[1]][randomOrder[i]]) + (weights[2] * data[X[2]][randomOrder[i]])+ (weights[3] * data[X[3]][randomOrder[i]])+ (weights[4] * data[X[4]][randomOrder[i]]) - weights[5]) < 0){
-                y = -1;
-            }
-            else{
-                y = 1;
-            }
-            /* if they are categorized wrongly */
-            if (y != labels[randomOrder[i]]){
-                /* if is part of training set */
-                if(i<160){
-                    for(j=0; j<5; j++){
-                        weights[j] = weights[j] + (double)(learning_rate/1000) * (double)(labels[randomOrder[i]] - y) * (double)X[j] / 2;
-                    }
-                }
-            }
-            /* if they are categorized correctly */
-            else{
-                /* if is part of training set */
-                if(i<160){
-                    training_correct++;
-                }
-                /* if is part of validation set */
-                else{
-                    validation_correct++;
-                }
-            }
-        }
+		/* make list of numbers 0-199 in random order */
+		int k;
+		for (k = 0; k < 200; k++)
+		{
+			randomOrder[k] = k;
+		}
+		for (k = 200 - 1; k >= 0; k--)
+		{
+			int j = rand() % (k + 1);
+			int temp = randomOrder[j];
+			randomOrder[j] = randomOrder[k];
+			randomOrder[k] = temp;
+		}
+		/* reset matching values */
+		training_correct = 0;
+		validation_correct = 0;
+		/* for all members of dataset(patients or healthy) */
+		for (i = 0; i < 200; i++)
+		{
+			/* check where they are categorized correctly */
+			int y;
+			if (((weights[0] * data[X[0]][randomOrder[i]]) + (weights[1] * data[X[1]][randomOrder[i]]) + (weights[2] * data[X[2]][randomOrder[i]]) + (weights[3] * data[X[3]][randomOrder[i]]) + (weights[4] * data[X[4]][randomOrder[i]]) - weights[5]) < 0)
+			{
+				y = -1;
+			}
+			else
+			{
+				y = 1;
+			}
+			/* if they are categorized wrongly */
+			if (y != labels[randomOrder[i]])
+			{
+				/* if is part of training set */
+				if (i < 160)
+				{
+					for (j = 0; j < 5; j++)
+					{
+						weights[j] = weights[j] + (double)(learning_rate / 1000) * (double)(labels[randomOrder[i]] - y) * (double)X[j] / 2;
+					}
+				}
+			}
+			/* if they are categorized correctly */
+			else
+			{
+				/* if is part of training set */
+				if (i < 160)
+				{
+					training_correct++;
+				}
+				/* if is part of validation set */
+				else
+				{
+					validation_correct++;
+				}
+			}
+		}
 
-        iterations++;
-        /* reduce learning rate */
-        learning_rate = learning_rate - 0.0049;
-        double mean_training_correct = (double)training_correct/160;
-        double mean_validation_correct = (double)validation_correct/40;
-        /* if for 5 turns training set is categorized better that validation */
-        /* then we have overtraining                                         */
-        if(mean_training_correct > mean_validation_correct){
-            overtraining++;
-           if(overtraining == 5){
-                break;
-            }
-        }
-        else{
-            overtraining = 0;
-        }
-    }
-    /* fitness funtion is: (total correctly categorized)/(total number) */
-    fitnessValue = ((double)training_correct + (double)validation_correct)/200;
-    return fitnessValue;
+		iterations++;
+		/* reduce learning rate */
+		learning_rate = learning_rate - 0.0049;
+		double mean_training_correct = (double)training_correct / 160;
+		double mean_validation_correct = (double)validation_correct / 40;
+		/* if for 5 turns training set is categorized better that validation */
+		/* then we have overtraining                                         */
+		if (mean_training_correct > mean_validation_correct)
+		{
+			overtraining++;
+			if (overtraining == 5)
+			{
+				break;
+			}
+		}
+		else
+		{
+			overtraining = 0;
+		}
+	}
+	/* fitness funtion is: (total correctly categorized)/(total number) */
+	fitnessValue = ((double)training_correct + (double)validation_correct) / 200;
+	return fitnessValue;
 }
 
 /*              EVALUATE                                        */
@@ -241,67 +261,65 @@ double linearClassifier(int member){
 /*                                                              */
 void evaluate(void)
 {
-	int mem=0,i=0;
-  	Best=0;
-  	for(mem=0; mem<POPSIZE; mem++){
+	int mem = 0, i = 0;
+	Best = 0;
+	for (mem = 0; mem < POPSIZE; mem++)
+	{
 
-		//function to change
+		// function to change
 		Population[mem].Fitness = linearClassifier(mem);
 
+		/* Keep track of the best member of the population  */
+		/* Note that the last member of the population holds*/
+		/* a copy of the best member.                       */
 
-    	/* Keep track of the best member of the population  */
-    	/* Note that the last member of the population holds*/
-    	/* a copy of the best member.                       */
-
-    	if(Population[mem].Fitness>Population[POPSIZE].Fitness){
-      		Best=mem;
-      		Population[POPSIZE].Fitness=Population[mem].Fitness;
-      		for(i=0;i<NVARS;i++)
-        		Population[POPSIZE].Gene[i]=Population[mem].Gene[i];
-        }
-  	}
+		if (Population[mem].Fitness > Population[POPSIZE].Fitness)
+		{
+			Best = mem;
+			Population[POPSIZE].Fitness = Population[mem].Fitness;
+			for (i = 0; i < NVARS; i++)
+				Population[POPSIZE].Gene[i] = Population[mem].Gene[i];
+		}
+	}
 }
-
 
 /*              COPY_GENOTYPES                                   */
 /* 		Copies a genotype to another                             */
 /*                                                               */
-void copy_genotypes(struct genotype* oldgenotype, struct genotype* newgenotype)
+void copy_genotypes(struct genotype *oldgenotype, struct genotype *newgenotype)
 {
-	int i=0; /* some counter variables */
+	int i = 0; /* some counter variables */
 
-  	for(i=0; i<NVARS; i++)
-        	newgenotype->Gene[i]=oldgenotype->Gene[i];
+	for (i = 0; i < NVARS; i++)
+		newgenotype->Gene[i] = oldgenotype->Gene[i];
 
-  	newgenotype->Fitness=oldgenotype->Fitness;
+	newgenotype->Fitness = oldgenotype->Fitness;
 
-  	for(i=0; i<NVARS; i++)
-        	newgenotype->Upper[i]=oldgenotype->Upper[i];
-  	for(i=0; i<NVARS; i++)
-        	newgenotype->Lower[i]=oldgenotype->Lower[i];
+	for (i = 0; i < NVARS; i++)
+		newgenotype->Upper[i] = oldgenotype->Upper[i];
+	for (i = 0; i < NVARS; i++)
+		newgenotype->Lower[i] = oldgenotype->Lower[i];
 
-  	newgenotype->RFitness=oldgenotype->RFitness;
-  	newgenotype->CFitness=oldgenotype->CFitness;
-  	newgenotype->Selection_Prob=oldgenotype->Selection_Prob;
-  	newgenotype->Cumulative_Prob=oldgenotype->Cumulative_Prob;
+	newgenotype->RFitness = oldgenotype->RFitness;
+	newgenotype->CFitness = oldgenotype->CFitness;
+	newgenotype->Selection_Prob = oldgenotype->Selection_Prob;
+	newgenotype->Cumulative_Prob = oldgenotype->Cumulative_Prob;
 
-  	newgenotype->Survivor=oldgenotype->Survivor;
-  	newgenotype->Mate=oldgenotype->Mate;
-  	newgenotype->Mutate=oldgenotype->Mutate;
+	newgenotype->Survivor = oldgenotype->Survivor;
+	newgenotype->Mate = oldgenotype->Mate;
+	newgenotype->Mutate = oldgenotype->Mutate;
 }
-
 
 /*              COPY_POPULATION                                 */
 /* 		Copies a population to another population               */
 /*                                                              */
-void copy_population(struct genotype old_pop[POPSIZE+1],struct genotype new_pop[POPSIZE+1])
+void copy_population(struct genotype old_pop[POPSIZE + 1], struct genotype new_pop[POPSIZE + 1])
 {
-	int mem=0; /* some counter variables */
+	int mem = 0; /* some counter variables */
 
-  	for(mem=0; mem<=POPSIZE; mem++)
-    	copy_genotypes(&old_pop[mem],&new_pop[mem]);
+	for (mem = 0; mem <= POPSIZE; mem++)
+		copy_genotypes(&old_pop[mem], &new_pop[mem]);
 }
-
 
 /*              SELECT                                          */
 /* This is an implementation of STANDARD PROPORTIONAL SELECTION */
@@ -311,58 +329,58 @@ void copy_population(struct genotype old_pop[POPSIZE+1],struct genotype new_pop[
 /*                                                              */
 void select_ga(void)
 {
-  	int    member, spin_num, mem; /* Some counter variables       */
-  	double Total_Fitness;       /* The total population fitness */
-  	double roulette=0;
-  	/* a variable for temporary storing of the population */
-  	struct genotype Buffered_Pop[POPSIZE+1];
-  	int Found;                    /* A flag */
+	int member, spin_num, mem; /* Some counter variables       */
+	double Total_Fitness;	   /* The total population fitness */
+	double roulette = 0;
+	/* a variable for temporary storing of the population */
+	struct genotype Buffered_Pop[POPSIZE + 1];
+	int Found; /* A flag */
 
-  	/* First, find the total fitness of the population    */
-  	Total_Fitness=0;
-  	for (member=0; member<POPSIZE; member++)
-      	Total_Fitness += Population[member].Fitness;
+	/* First, find the total fitness of the population    */
+	Total_Fitness = 0;
+	for (member = 0; member < POPSIZE; member++)
+		Total_Fitness += Population[member].Fitness;
 
-  	/* Next, calculate the probability of a selection of each genotype      */
-  	for(member=0; member<POPSIZE; member++)
-    	Population[member].Selection_Prob = Population[member].Fitness/Total_Fitness;
+	/* Next, calculate the probability of a selection of each genotype      */
+	for (member = 0; member < POPSIZE; member++)
+		Population[member].Selection_Prob = Population[member].Fitness / Total_Fitness;
 
 	/* Now, calculate the cumulative probability of each genotype     */
-  	Population[0].Cumulative_Prob=Population[0].Selection_Prob;
+	Population[0].Cumulative_Prob = Population[0].Selection_Prob;
 
-  	for(member=1; member<POPSIZE; member++)
-    	Population[member].Cumulative_Prob = Population[member-1].Cumulative_Prob +
-                                             Population[member].Selection_Prob;
+	for (member = 1; member < POPSIZE; member++)
+		Population[member].Cumulative_Prob = Population[member - 1].Cumulative_Prob +
+											 Population[member].Selection_Prob;
 
-  	/* Finally, select the survivors using the cumulative probability */
-  	/* and create the new Population                                  */
-  	for(spin_num=0; spin_num<POPSIZE; spin_num++) {
-    	Found = FALSE;
-    	roulette = (double) rand()/RAND_MAX;
+	/* Finally, select the survivors using the cumulative probability */
+	/* and create the new Population                                  */
+	for (spin_num = 0; spin_num < POPSIZE; spin_num++)
+	{
+		Found = FALSE;
+		roulette = (double)rand() / RAND_MAX;
 
-    	if(roulette < Population[0].Cumulative_Prob) 			/* Select the first member of the Population */
-      		copy_genotypes(&Population[0],&Buffered_Pop[spin_num]);
-        else if(roulette >Population[POPSIZE-1].Cumulative_Prob) /* select the best member of the population */
-             copy_genotypes(&Population[POPSIZE],&Buffered_Pop[spin_num]);
-        else
-        	for(mem=1; mem<POPSIZE && Found==FALSE; mem++)
-           		if( (roulette > Population[mem-1].Cumulative_Prob) &&
-              	    (roulette <=Population[mem].Cumulative_Prob) )
-           		{
-              		copy_genotypes(&Population[mem],&Buffered_Pop[spin_num]);
-              		Found = TRUE;
-           		}
+		if (roulette < Population[0].Cumulative_Prob) /* Select the first member of the Population */
+			copy_genotypes(&Population[0], &Buffered_Pop[spin_num]);
+		else if (roulette > Population[POPSIZE - 1].Cumulative_Prob) /* select the best member of the population */
+			copy_genotypes(&Population[POPSIZE], &Buffered_Pop[spin_num]);
+		else
+			for (mem = 1; mem < POPSIZE && Found == FALSE; mem++)
+				if ((roulette > Population[mem - 1].Cumulative_Prob) &&
+					(roulette <= Population[mem].Cumulative_Prob))
+				{
+					copy_genotypes(&Population[mem], &Buffered_Pop[spin_num]);
+					Found = TRUE;
+				}
 	}
 
-  	/* copy the best individual */
-  	copy_genotypes(&Population[POPSIZE],&Buffered_Pop[POPSIZE]);
+	/* copy the best individual */
+	copy_genotypes(&Population[POPSIZE], &Buffered_Pop[POPSIZE]);
 
-  	/* Copy the Buffered_Pop to the original Population */
-  	copy_population(Buffered_Pop,Population);
+	/* Copy the Buffered_Pop to the original Population */
+	copy_population(Buffered_Pop, Population);
 
-  	/* Population , now is the new population           */
+	/* Population , now is the new population           */
 }
-
 
 /*              CROSSOVER                                               */
 /* This is an implementation of STANDARD SINGLE POINT CROSSOVER.        */
@@ -372,62 +390,66 @@ void select_ga(void)
 /*                                                                      */
 void crossover(void)
 {
-  	int mem,i,            /* Counting variables   */
-      	parent1,          /* Parent one           */
-      	parent2,          /* Parent two           */
-      	xover_point,      /* Crossover point      */
-      	count=0,
-      	lovers=0,         /* number of matting genotypes */
-      	indiv=0;
-  	struct genotype temp_parent;
+	int mem, i,		 /* Counting variables   */
+		parent1,	 /* Parent one           */
+		parent2,	 /* Parent two           */
+		xover_point, /* Crossover point      */
+		count = 0,
+		lovers = 0, /* number of matting genotypes */
+		indiv = 0;
+	struct genotype temp_parent;
 
-  	for(mem=0; mem<=POPSIZE; mem++)
-    	Population[mem].Mate=FALSE;
+	for (mem = 0; mem <= POPSIZE; mem++)
+		Population[mem].Mate = FALSE;
 
-  	/* first find the individuals for the Crossover operation */
-  	for (mem=0;mem<POPSIZE;mem++)
-    	if (frand() < PXOVER){ /* frand returns a random number in the range [0,1] */
-       		Population[mem].Mate = TRUE;
-       		lovers++;
-    	}
+	/* first find the individuals for the Crossover operation */
+	for (mem = 0; mem < POPSIZE; mem++)
+		if (frand() < PXOVER)
+		{ /* frand returns a random number in the range [0,1] */
+			Population[mem].Mate = TRUE;
+			lovers++;
+		}
 
 	/* We want an even number of "lovers"*/
-  	if((lovers%2) != 0) {
-    	do  	/* find an non "lover" */
-    		indiv=rand()%POPSIZE;
-    	while(Population[indiv].Mate==TRUE);
-  		/* make it "lover"    */
-  		Population[indiv].Mate=TRUE;
-  		lovers++;
+	if ((lovers % 2) != 0)
+	{
+		do /* find an non "lover" */
+			indiv = rand() % POPSIZE;
+		while (Population[indiv].Mate == TRUE);
+		/* make it "lover"    */
+		Population[indiv].Mate = TRUE;
+		lovers++;
 	}
 
-  	/* second mate the "lovers" */
-  	mem=0;
-  	for(count=0; count<(lovers/2); count++) {
-    	while(Population[mem].Mate==FALSE) mem++; /* find the first parent */
-    	parent1=mem;
+	/* second mate the "lovers" */
+	mem = 0;
+	for (count = 0; count < (lovers / 2); count++)
+	{
+		while (Population[mem].Mate == FALSE)
+			mem++; /* find the first parent */
+		parent1 = mem;
 		mem++;
-    	while(Population[mem].Mate==FALSE) mem++; /* find the second parent */
-    	parent2=mem;
+		while (Population[mem].Mate == FALSE)
+			mem++; /* find the second parent */
+		parent2 = mem;
 		mem++;
 
-    	/* select the crossover point :1...NVARS-1 */
-    	xover_point=(rand()%(NVARS-1))+1;
+		/* select the crossover point :1...NVARS-1 */
+		xover_point = (rand() % (NVARS - 1)) + 1;
 
-    	/* Perform the crossover */
-    	/* copy parent1 to temp_parent */
-    	copy_genotypes(&Population[parent1],&temp_parent);
+		/* Perform the crossover */
+		/* copy parent1 to temp_parent */
+		copy_genotypes(&Population[parent1], &temp_parent);
 
-    	for(i=xover_point; i<NVARS; i++)
-        	Population[parent1].Gene[i]=Population[parent2].Gene[i];
-    	for(i=xover_point;i<NVARS;i++)
-        	Population[parent2].Gene[i]=temp_parent.Gene[i];
-  	}
-  	/* set Mate flag to False */
-	for(mem=0;mem<=POPSIZE;mem++)
-    	Population[mem].Mate=FALSE;
+		for (i = xover_point; i < NVARS; i++)
+			Population[parent1].Gene[i] = Population[parent2].Gene[i];
+		for (i = xover_point; i < NVARS; i++)
+			Population[parent2].Gene[i] = temp_parent.Gene[i];
+	}
+	/* set Mate flag to False */
+	for (mem = 0; mem <= POPSIZE; mem++)
+		Population[mem].Mate = FALSE;
 }
-
 
 /*              MUTATION                                                */
 /* This is an implementation of random mutation. A value selected       */
@@ -438,22 +460,21 @@ void crossover(void)
 /*                                                                      */
 void mutate(void)
 {
-  	double lbound,hbound;
-  	int member,             /* The member to be mutated                 */
-      	var;                /* The variable to be mutated               */
+	double lbound, hbound;
+	int member, /* The member to be mutated                 */
+		var;	/* The variable to be mutated               */
 
+	for (member = 0; member < POPSIZE; member++) /* for every member */
+		for (var = 0; var < NVARS; var++)		 /* for every gene   */
+			if (frand() < PMUTATION)
+			{
+				lbound = Population[member].Lower[var];
+				hbound = Population[member].Upper[var];
 
-  	for(member=0; member<POPSIZE; member++) /* for every member */
-    	for(var=0; var<NVARS; var++)		/* for every gene   */
-      		if(frand()<PMUTATION){
-         		lbound=Population[member].Lower[var];
-         		hbound=Population[member].Upper[var];
-
-         		/* Generate a new random value between the bounds */
-         		Population[member].Gene[var]=RandVal(lbound,hbound);
-       		}
+				/* Generate a new random value between the bounds */
+				Population[member].Gene[var] = RandVal(lbound, hbound);
+			}
 }
-
 
 /*              REPORT                                          */
 /* Report progress of the simulation. Data is dumped to a log   */
@@ -462,41 +483,41 @@ void mutate(void)
 /*                                                              */
 void report(void)
 {
-  	double best_val,      /* Best population fitness                      */
-           avg,           /* Average population fitness                   */
-           stddev,        /* Std. deviation of population fitness         */
-           sum_square,    /* Sum of the squares for std. dev calc.        */
-           square_sum,    /* Square of the sums for std. dev. calc.       */
-           sum;           /* The summed population fitness                */
-	int i=0;	/* counter */
+	double best_val, /* Best population fitness                      */
+		avg,		 /* Average population fitness                   */
+		stddev,		 /* Std. deviation of population fitness         */
+		sum_square,	 /* Sum of the squares for std. dev calc.        */
+		square_sum,	 /* Square of the sums for std. dev. calc.       */
+		sum;		 /* The summed population fitness                */
+	int i = 0;		 /* counter */
 
-	sum=0.0;
-  	sum_square=0.0;
+	sum = 0.0;
+	sum_square = 0.0;
 
-  	/* Calculate the summed population fitness and the sum        */
-  	/* of the squared individual fitnesses.                       */
-  	for(i=0; i<POPSIZE; i++){
-    	sum += (Population[i].Fitness);
-    	sum_square += pow(Population[i].Fitness, 2);
+	/* Calculate the summed population fitness and the sum        */
+	/* of the squared individual fitnesses.                       */
+	for (i = 0; i < POPSIZE; i++)
+	{
+		sum += (Population[i].Fitness);
+		sum_square += pow(Population[i].Fitness, 2);
 	}
 
-  	/* Calculate the average and standard deviations of the       */
-  	/* population's fitness.                                      */
-  	avg=sum/(double)POPSIZE;
-  	square_sum=sum*sum/(double) POPSIZE;
-  	stddev=sqrt((1.0/(double)(POPSIZE-1))*(sum_square-square_sum));
-  	best_val=Population[POPSIZE].Fitness;
+	/* Calculate the average and standard deviations of the       */
+	/* population's fitness.                                      */
+	avg = sum / (double)POPSIZE;
+	square_sum = sum * sum / (double)POPSIZE;
+	stddev = sqrt((1.0 / (double)(POPSIZE - 1)) * (sum_square - square_sum));
+	best_val = Population[POPSIZE].Fitness;
 
-  	/* Print the generation, best, avg, and std. deviation to a   */
-  	/* file in csv format.                                        */
-  	fprintf(galog,"\n%10d  %15.4f  %15.4f  %15.4f", Generation, best_val, avg, stddev);
+	/* Print the generation, best, avg, and std. deviation to a   */
+	/* file in csv format.                                        */
+	fprintf(galog, "\n%10d  %15.4f  %15.4f  %15.4f", Generation, best_val, avg, stddev);
 	/* Print the Best Genotype */
 	fprintf(galog, "  (");
-	for(i=0;i<NVARS;i++)
-    	fprintf(galog," %5.3f ",Population[POPSIZE].Gene[i]);
+	for (i = 0; i < NVARS; i++)
+		fprintf(galog, " %5.3f ", Population[POPSIZE].Gene[i]);
 	fprintf(galog, ") ");
 }
-
 
 /*                     MAIN                                     */
 /* This is the main function. It loops for the specified number */
@@ -506,62 +527,62 @@ void report(void)
 /*                                                              */
 int main(void)
 {
-	int i,j;
+	int i, j;
 
-  	srand(time(0));
+	srand(time(0));
 
-  	if((galog=fopen("galog.txt","w"))==NULL){
+	if ((galog = fopen("galog.txt", "w")) == NULL)
+	{
 		printf("Can't open galog.txt \n");
-    	exit(1);
-  	}
-	fprintf(galog,"%10s  %15s  %15s  %15s  %20s\n", "Generation", "Best Value", "Average", "StdDev", "Best Genotype");
+		exit(1);
+	}
+	fprintf(galog, "%10s  %15s  %15s  %15s  %20s\n", "Generation", "Best Value", "Average", "StdDev", "Best Genotype");
 
-  	Generation=0;
+	Generation = 0;
 	readDataFiles();
-  	initialize();
-  	printf("Initial Population\n");
-	for (j=0; j<NVARS; j++)
+	initialize();
+	printf("Initial Population\n");
+	for (j = 0; j < NVARS; j++)
 		printf("  Gene%d   ", j);
 	printf("\n");
-	for(i=0;i<POPSIZE;i++){
-    	for(j=0;j<NVARS;j++)
-        	printf("%g ", Population[i].Gene[j]);
-    	printf("\n");
-  	}
+	for (i = 0; i < POPSIZE; i++)
+	{
+		for (j = 0; j < NVARS; j++)
+			printf("%g ", Population[i].Gene[j]);
+		printf("\n");
+	}
 
-  	evaluate();
-  	while(Generation<MAXGENS){
-    	Generation++;
-    	select_ga();
-    	crossover();
-    	mutate();
-    	evaluate();
+	evaluate();
+	while (Generation < MAXGENS)
+	{
+		Generation++;
+		select_ga();
+		crossover();
+		mutate();
+		evaluate();
 
-	if (Generation % DISPLAYFREQ == 0)
-		printf("Generation : %d/%d \t Best Fitness: %5f\n", Generation, MAXGENS, Population[POPSIZE].Fitness);
+		if (Generation % DISPLAYFREQ == 0)
+			printf("Generation : %d/%d \t Best Fitness: %5f\n", Generation, MAXGENS, Population[POPSIZE].Fitness);
 
-    	report();
-  	}
+		report();
+	}
 	/* print final result to screen */
 	printf("\n\nSimulation completed\n");
-  	printf("\n   Best Member:");
-	for(i=0; i<NVARS; i++)
-    	printf(" %f ",Population[POPSIZE].Gene[i]);
+	printf("\n   Best Member:");
+	for (i = 0; i < NVARS; i++)
+		printf(" %f ", Population[POPSIZE].Gene[i]);
 	printf("  Fitness: %5f\n", Population[POPSIZE].Fitness);
 
-	fprintf(galog,"\n\nSimulation completed\n");
-  	fprintf(galog,"\n   Best member :\n");
+	fprintf(galog, "\n\nSimulation completed\n");
+	fprintf(galog, "\n   Best member :\n");
 
-  	for(i=0;i<NVARS;i++)
-    	fprintf(galog,"\n Var(%d) = %3.3f",i,Population[POPSIZE].Gene[i]);
+	for (i = 0; i < NVARS; i++)
+		fprintf(galog, "\n Var(%d) = %3.3f", i, Population[POPSIZE].Gene[i]);
 	fprintf(galog, "  Fitness: %5f\n", Population[POPSIZE].Fitness);
 
-  	fclose(galog);
+	fclose(galog);
 
 	return 0;
 }
 
 /* ------------------------- THE END ---------------------------        */
-
-
-
