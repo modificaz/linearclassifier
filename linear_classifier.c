@@ -19,7 +19,8 @@ double linearClassifier(int X[INPUT_SIZE], int data[][SAMPLES], int *labels)
 	int epochs = 0;						// number of training steps
 	double learning_rate = LEARNING_RT; // starting learning rate(reduced by LEARNING_RT_DCR every loop)
 	static int randomOrder[SAMPLES];	// list of numbers 0-199 in random order
-	double weights[INPUT_SIZE + 1];		// perceptron weights
+	double weights[INPUT_SIZE];		    // perceptron weights
+	double bias;						// perceptron bias
 	int i, j;							// counters
 	int training_correct = 0;			// correct matches in training set
 	int validation_correct = 0;			// correct matches in validation set
@@ -27,10 +28,11 @@ double linearClassifier(int X[INPUT_SIZE], int data[][SAMPLES], int *labels)
 	double fitnessValue;				// value of fitness
 
 	/* choose random initial weights  */
-	for (i = 0; i < INPUT_SIZE + 1; i++)
+	for (i = 0; i < INPUT_SIZE; i++)
 	{
 		weights[i] = (double)rand() / RAND_MAX;
 	}
+	bias = (double)rand() / RAND_MAX;
 
 	while (epochs < MAX_EPOCHS)
 	{
@@ -61,7 +63,7 @@ double linearClassifier(int X[INPUT_SIZE], int data[][SAMPLES], int *labels)
 			      weights[1] * data[X[1]][row] +
 				  weights[2] * data[X[2]][row] +
 				  weights[3] * data[X[3]][row] +
-				  weights[4] * data[X[4]][row] - weights[5]) < 0)
+				  weights[4] * data[X[4]][row] + bias) < 0)
 			{
 				output = -1;
 			}
@@ -80,6 +82,7 @@ double linearClassifier(int X[INPUT_SIZE], int data[][SAMPLES], int *labels)
 					{
 						weights[j] += learning_rate * ((double)(target - output) / OUTPT_SCL_FCT) * (double)data[X[j]][row] / INPUT_SCL_FCT;
 					}
+					bias += learning_rate * (double)(target - output) / OUTPT_SCL_FCT;
 				}
 			}
 			/* if they are categorized correctly */

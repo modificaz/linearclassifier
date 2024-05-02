@@ -29,7 +29,8 @@
 
 #define POPSIZE 200		/* Population size                       */
 #define MAXGENS 1000	/* Maximum number of generations         */
-#define NVARS 65		/* Number of problem variables           */
+#define CHROMOSOME_SIZE 13 /* Chromosome size */
+#define NVARS (CHROMOSOME_SIZE * INPUT_SIZE)		/* Number of problem variables           */
 #define PXOVER 0.9		/* Probability of crossover              */
 #define PMUTATION 0.01	/* Probability of mutation	         	 */
 #define DISPLAYFREQ 100 /* Display frequency of the best fitness */

@@ -30,7 +30,7 @@ double RandVal(double low, double high)
 
 /*                    readDataFiles                        */
 /* reads in the dataset and label of each patient from     */
-/* a text file and stores them to data[8192][200] and      */
+/* a text file and stores them to data[DATA_COLUMNS][200] and      */
 /* labels[200]                                             */
 /*                                                         */
 void readDataFiles(void)
@@ -43,7 +43,6 @@ void readDataFiles(void)
 	if (file != NULL)
 	{
 		static char line[30000]; /* or other suitable maximum line size */
-
 		while (fgets(line, sizeof line, file) != NULL) /* read a line */
 		{
 			/* get the first token */
@@ -51,7 +50,7 @@ void readDataFiles(void)
 			data[0][j] = atoi(token);
 
 			/* walk through other tokens */
-			for (i = 1; i < 8192; i++)
+			for (i = 1; i < DATA_COLUMNS; i++)
 			{
 				token = strtok(NULL, "\t");
 				data[i][j] = atoi(token);
@@ -149,8 +148,8 @@ void evaluate(void)
 		/* right peptides                                       */
         for (int i = 0; i < INPUT_SIZE; i++) {
 			feature_vec[i] = 0;
-            for (int j = 0; j < 13; j++) {
-                feature_vec[i] += ((int)Population[member].Gene[j + (i * 13)]) << (12 - j);
+            for (int j = 0; j < CHROMOSOME_SIZE; j++) {
+                feature_vec[i] += ((int)Population[member].Gene[j + (i * CHROMOSOME_SIZE)]) << ((CHROMOSOME_SIZE - 1) - j);
             }
         }
 
