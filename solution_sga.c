@@ -42,7 +42,7 @@ void readDataFiles(void)
 	int j = 0;
 	if (file != NULL)
 	{
-		static char line[30000]; /* or other suitable maximum line size */
+		static char line[30000];					   /* or other suitable maximum line size */
 		while (fgets(line, sizeof line, file) != NULL) /* read a line */
 		{
 			/* get the first token */
@@ -146,12 +146,14 @@ void evaluate(void)
 	{
 		/* Conversion of binary to decimal in order to find the */
 		/* right peptides                                       */
-        for (int i = 0; i < INPUT_SIZE; i++) {
+		for (int i = 0; i < INPUT_SIZE; i++)
+		{
 			feature_vec[i] = 0;
-            for (int j = 0; j < CHROMOSOME_SIZE; j++) {
-                feature_vec[i] += ((int)Population[member].Gene[j + (i * CHROMOSOME_SIZE)]) << ((CHROMOSOME_SIZE - 1) - j);
-            }
-        }
+			for (int j = 0; j < CHROMOSOME_SIZE; j++)
+			{
+				feature_vec[i] += ((int)Population[member].Gene[j + (i * CHROMOSOME_SIZE)]) << ((CHROMOSOME_SIZE - 1) - j);
+			}
+		}
 
 		// function to change
 		Population[member].Fitness = linearClassifier(feature_vec, data, labels);

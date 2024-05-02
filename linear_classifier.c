@@ -19,7 +19,7 @@ double linearClassifier(int X[INPUT_SIZE], int data[][SAMPLES], int *labels)
 	int epochs = 0;						// number of training steps
 	double learning_rate = LEARNING_RT; // starting learning rate(reduced by LEARNING_RT_DCR every loop)
 	static int randomOrder[SAMPLES];	// list of numbers 0-199 in random order
-	double weights[INPUT_SIZE];		    // perceptron weights
+	double weights[INPUT_SIZE];			// perceptron weights
 	double bias;						// perceptron bias
 	int i, j;							// counters
 	int training_correct = 0;			// correct matches in training set
@@ -59,11 +59,11 @@ double linearClassifier(int X[INPUT_SIZE], int data[][SAMPLES], int *labels)
 			/* check where they are categorized correctly */
 			int row = randomOrder[i];
 			int output;
-			if  ((weights[0] * data[X[0]][row] +
-			      weights[1] * data[X[1]][row] +
-				  weights[2] * data[X[2]][row] +
-				  weights[3] * data[X[3]][row] +
-				  weights[4] * data[X[4]][row] + bias) < 0)
+			if ((weights[0] * data[X[0]][row] +
+				 weights[1] * data[X[1]][row] +
+				 weights[2] * data[X[2]][row] +
+				 weights[3] * data[X[3]][row] +
+				 weights[4] * data[X[4]][row] + bias) < 0)
 			{
 				output = -1;
 			}
