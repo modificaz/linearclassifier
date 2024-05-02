@@ -1,129 +1,172 @@
-/*                      LINEAR CLASSIFIER                         */
-/*															      */
-#define SAMPLES 200
-#define TRAINING_SAMPLES 160
-#define VALIDATION_SAMPLES 40
 #define MAX_EPOCHS 100
-#define INPUT_SIZE 5
+#define SAMPLES 200
+#define VLD_SPLIT 0.3
+#define NR_FEATURES 5
+#define LEARNING_RT 0.03
+#define RANDOM_INIT_W 1
 #define INPUT_SCL_FCT 1000
-#define OUTPT_SCL_FCT 2
-#define LEARNING_RT 0.5
-#define LEARNING_RT_DCR 0.0049
-#define OVRTRN_MAX_EPOCHS 5
 
-#include <math.h>
+#define FRAND_NRM() (((double) rand() / RAND_MAX) * 2.0 - 1.0)
+#define SIGMOID(x) (1 / (1 + exp(-x)))
+#define TRN_SAMPLES (SAMPLES * (1.0 - VLD_SPLIT))
+
+#include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <math.h>
 
-double linearClassifier(int X[INPUT_SIZE], int data[][SAMPLES], int *labels)
+// Declarations
+double dot_product(const double *a, const double *b, const int vector_size);
+double vec_norm(const double *a, const int vector_size);
+double cross_entropy_loss_vanilla(double y_true, double y_pred);
+double cross_entropy_loss_mod(double y_true, double w_sum);
+double test_model(const int *feat_index, const double *weights, const int data[][SAMPLES], const int *y, const int *order);
+void shuffle_rows(int *randomOrder);
+
+double linearClassifier(const int *feat_index, const int data[][SAMPLES], const int *y)
 {
-	int epochs = 0;						// number of training steps
-	double learning_rate = LEARNING_RT; // starting learning rate(reduced by LEARNING_RT_DCR every loop)
-	static int randomOrder[SAMPLES];	// list of numbers 0-199 in random order
-	double weights[INPUT_SIZE];			// perceptron weights
-	double bias;						// perceptron bias
-	int i, j;							// counters
-	int training_correct = 0;			// correct matches in training set
-	int validation_correct = 0;			// correct matches in validation set
-	int overtraining = 0;				// overtraining counter/flag
-	double fitnessValue;				// value of fitness
+    double weights[NR_FEATURES+1]= {0};
+    double gradient[NR_FEATURES+1];
+    double loss = 0.0;
+    double best_loss = TRN_SAMPLES;
+    static int randomOrder[SAMPLES];
+    int epoch = 0;
+    static double best = 0.0;
+    int trn_error;
+    int tst_error;
+    double X[NR_FEATURES+1] = {0};
+    double w_sum;
+    double fitness = 0.0;
+    double best_fitness = 0.0;
+    /* assign random or zero initial weight values depending on RANDOM_INIT_W flag */
+    if (RANDOM_INIT_W) {
+        for (int i = 0; i < NR_FEATURES+1; i++) {
+            weights[i] = FRAND_NRM();
+        }
+    }
+    /* shuffling rows once to split samples in training and test set*/
+    shuffle_rows(randomOrder);
+    /* outer loop for every epoch */
+    while (epoch++ < MAX_EPOCHS) {
+        for (int i = 0; i < NR_FEATURES+1; i++) {
+            gradient[i] = 0;
+        }
+        loss = 0.0;
+        trn_error = 0;
+        tst_error = 0;
+        /* inner loop for every training sample */
+        for (int j = 0; j < TRN_SAMPLES; j++) {
+            int row = randomOrder[j];
+            for (int i = 0; i < NR_FEATURES; i++) {
+                X[i] = (double)data[feat_index[i]][row] / INPUT_SCL_FCT;
+            }
+            X[NR_FEATURES] = 1.0;
+            int y_true = y[row];
+            w_sum = dot_product(X, weights, NR_FEATURES+1);
+            double output = SIGMOID(w_sum);
+            int y_pred = output > 0.5 ? 1 : -1;
+            loss += cross_entropy_loss_mod(y_true, w_sum);
+            for (int i = 0; i < NR_FEATURES+1; i++) {
+                gradient[i] += X[i] * (output - (y_true + 1) / 2);
+            }
+        }
 
-	/* choose random initial weights  */
-	for (i = 0; i < INPUT_SIZE; i++)
-	{
-		weights[i] = (double)rand() / RAND_MAX;
-	}
-	bias = (double)rand() / RAND_MAX;
+        // Update weights (once per epoch)
+        for (int i = 0; i < NR_FEATURES+1; i++) {
+            weights[i] -= LEARNING_RT * gradient[i];
+        }
 
-	while (epochs < MAX_EPOCHS)
-	{
+        fitness = test_model(feat_index, weights, data, y, randomOrder);
+        if (fitness > best_fitness) {
+            best_fitness = fitness;
+        }
+    }
+    return best_fitness;
+}
 
-		/* make list of numbers from 0 to (SAMPLES - 1) in random order */
-		int k;
-		for (k = 0; k < SAMPLES; k++)
-		{
-			randomOrder[k] = k;
-		}
-		for (k = SAMPLES - 1; k >= 0; k--)
-		{
-			int j = rand() % (k + 1);
-			int temp = randomOrder[j];
-			randomOrder[j] = randomOrder[k];
-			randomOrder[k] = temp;
-		}
-		/* reset matching values */
-		training_correct = 0;
-		validation_correct = 0;
-		/* for all members of dataset(patients or healthy) */
-		for (i = 0; i < SAMPLES; i++)
-		{
-			/* check where they are categorized correctly */
-			int row = randomOrder[i];
-			int output;
-			double w_sum = 0.0;
-			for (j = 0; j < INPUT_SIZE; j++) {
-				w_sum += weights[j] * (double)data[X[j]][row] / INPUT_SCL_FCT;
-			}
-			w_sum += bias;
-			if (w_sum < 0)
-			{
-				output = -1;
-			}
-			else
-			{
-				output = 1;
-			}
-			int target = labels[row];
-			int error = (target - output) / OUTPT_SCL_FCT;
-			/* if they are categorized wrongly */
-			if (error != 0)
-			{
-				/* if is part of training set */
-				if (i < TRAINING_SAMPLES)
-				{
-					for (j = 0; j < INPUT_SIZE; j++)
-					{
-						weights[j] += learning_rate * error * (double)data[X[j]][row] / INPUT_SCL_FCT;
-					}
-					bias += learning_rate * error;
-				}
-			}
-			/* if they are categorized correctly */
-			else
-			{
-				/* if is part of training set */
-				if (i < TRAINING_SAMPLES)
-				{
-					training_correct++;
-				}
-				/* if is part of validation set */
-				else
-				{
-					validation_correct++;
-				}
-			}
-		}
+// Function to compute dot product of two vectors
+double dot_product(const double *a, const double *b, const int vector_size) {
+    double result = 0.0;
+    for (int i = 0; i < vector_size; i++) {
+        result += a[i] * b[i];
+    }
+    return result;
+}
 
-		epochs++;
-		/* reduce learning rate */
-		learning_rate -= LEARNING_RT_DCR;
-		double mean_training_correct = (double)training_correct / TRAINING_SAMPLES;
-		double mean_validation_correct = (double)validation_correct / VALIDATION_SAMPLES;
-		/* if for 5 turns training set is categorized better that validation */
-		/* then we have overtraining                                         */
-		if (mean_training_correct > mean_validation_correct)
-		{
-			overtraining++;
-			if (overtraining == OVRTRN_MAX_EPOCHS)
-			{
-				break;
-			}
-		}
-		else
-		{
-			overtraining = 0;
-		}
-	}
-	/* fitness funtion is: (total correctly categorized)/(total number) */
-	fitnessValue = ((double)training_correct + (double)validation_correct) / SAMPLES;
-	return fitnessValue;
+// Function to compute norm of a vector
+double vec_norm(const double *a, const int vector_size) {
+    double result = 0.0;
+    for (int i = 0; i < vector_size; i++) {
+        result += pow(a[i], 2);
+    }
+    return sqrt(result);
+}
+
+
+// Cross entropy loss function for {0, 1} labels
+double cross_entropy_loss_vanilla(double y_true, double y_pred) {
+    return - (y_true * log(y_pred) + (1 - y_true) * log(1 - y_pred));
+}
+
+// Cross entropy loss function for {-1, 1} labels
+double cross_entropy_loss_mod(double y_true, double w_sum) {
+    return log(1 + exp(-y_true * w_sum));
+}
+
+// Function to shuffle row indices
+void shuffle_rows(int *randomOrder) {
+
+    // make list of numbers 0 - (SAMPLES - 1) in random order
+    int rnd, tmp;
+    for (int i = 0; i < SAMPLES; i++) {
+        randomOrder[i] = i;
+    }
+    for (int i = SAMPLES - 1; i >= 0; i--) {
+        rnd = rand() % (i + 1);
+        tmp = randomOrder[rnd];
+        randomOrder[rnd] = randomOrder[i];
+        randomOrder[i] = tmp;
+    }
+}
+
+// Test function
+double test_model(const int *feat_index, const double *weights, const int data[][SAMPLES], const int *y, const int *order) {
+    int fp = 0, tp = 0, tn = 0, fn = 0;
+    static double best = 0;
+    double error = 0;
+    double X[NR_FEATURES+1] = {0};
+    for (int j = TRN_SAMPLES; j < SAMPLES; j++) {
+            int row = order[j];
+            for (int i = 0; i < NR_FEATURES; i++) {
+                X[i] = (double)data[feat_index[i]][row] / 1000;
+            }
+            X[NR_FEATURES] = 1.0;
+            int y_true = y[row];
+            double w_sum = dot_product(X, weights, NR_FEATURES+1);
+            double output = SIGMOID(w_sum);
+            int y_pred = SIGMOID(w_sum) > 0.5 ? 1 : -1;
+            if (y_pred != y_true) {
+                error++;
+                if (y_true == 1) {
+                    fn++;
+                } else {
+                    fp++;
+                }
+            } else {
+                if (y_true == 1) {
+                    tp++;
+                } else {
+                    tn++;
+                }
+            }
+    }
+    double recall = (double)tp / (tp + fn);
+    double precision = (double)tp / (tp + fp);
+    double accuracy = (double) (tp + tn) / (tp + tn + fp + fn);
+    double f_measure = (2 * precision * recall) / (precision + recall);
+    if (f_measure > best) {
+        best = f_measure;
+        printf("[%d\t%d]\n[%d\t%d]\n", tp, fn, fp, tn);
+    }
+    return f_measure;
 }
