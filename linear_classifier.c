@@ -59,11 +59,12 @@ double linearClassifier(int X[INPUT_SIZE], int data[][SAMPLES], int *labels)
 			/* check where they are categorized correctly */
 			int row = randomOrder[i];
 			int output;
-			if ((weights[0] * data[X[0]][row] +
-				 weights[1] * data[X[1]][row] +
-				 weights[2] * data[X[2]][row] +
-				 weights[3] * data[X[3]][row] +
-				 weights[4] * data[X[4]][row] + bias) < 0)
+			double w_sum = 0.0;
+			for (j = 0; j < INPUT_SIZE; j++) {
+				w_sum += weights[j] * (double)data[X[j]][row] / INPUT_SCL_FCT;
+			}
+			w_sum += bias;
+			if (w_sum < 0)
 			{
 				output = -1;
 			}
@@ -71,18 +72,19 @@ double linearClassifier(int X[INPUT_SIZE], int data[][SAMPLES], int *labels)
 			{
 				output = 1;
 			}
-			/* if they are categorized wrongly */
 			int target = labels[row];
-			if (output != target)
+			int error = (target - output) / OUTPT_SCL_FCT;
+			/* if they are categorized wrongly */
+			if (error != 0)
 			{
 				/* if is part of training set */
 				if (i < TRAINING_SAMPLES)
 				{
 					for (j = 0; j < INPUT_SIZE; j++)
 					{
-						weights[j] += learning_rate * ((double)(target - output) / OUTPT_SCL_FCT) * (double)data[X[j]][row] / INPUT_SCL_FCT;
+						weights[j] += learning_rate * error * (double)data[X[j]][row] / INPUT_SCL_FCT;
 					}
-					bias += learning_rate * (double)(target - output) / OUTPT_SCL_FCT;
+					bias += learning_rate * error;
 				}
 			}
 			/* if they are categorized correctly */
