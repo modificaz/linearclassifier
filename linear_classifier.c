@@ -1,6 +1,6 @@
-#define MAX_EPOCHS 100
+#define MAX_EPOCHS 50
 #define SAMPLES 200
-#define SPLIT_RATIO 0.8
+#define SPLIT_RATIO 0.75
 #define TRN_SAMPLES (SAMPLES * SPLIT_RATIO)
 #define TST_SAMPLES (SAMPLES - TRN_SAMPLES)
 #define NR_FEATURES 5
@@ -76,13 +76,13 @@ double linearClassifier(const int *feat_index, const int data[][SAMPLES], const 
 
             /* Calulate gradient for this sample */
             for (int i = 0; i < NR_FEATURES+1; i++) {
-                gradient[i] += X[i] * (y_pred - y_true);
+                gradient[i] += X[i] * (y_pred - y_true) / TRN_SAMPLES;
             }
         }
 
         // Update weights (once per epoch)
         for (int i = 0; i < NR_FEATURES+1; i++) {
-            weights[i] -= LEARNING_RT * gradient[i] / TRN_SAMPLES;
+            weights[i] -= LEARNING_RT * gradient[i];
         }
     }
 
@@ -141,7 +141,7 @@ double test_model(const int *feat_index, const double *weights, const int data[]
     for (int j = SAMPLES - TST_SAMPLES; j < SAMPLES; j++) {
             int row = order[j];
             for (int i = 0; i < NR_FEATURES; i++) {
-                X[i] = (double)data[feat_index[i]][row] / 1000;
+                X[i] = (double)data[feat_index[i]][row] / INPUT_SCL_FCT;
             }
             int y_true = (y[row] + 1) / 2;
             double w_sum = dot_product(X, weights, NR_FEATURES+1);
@@ -178,9 +178,11 @@ double test_model(const int *feat_index, const double *weights, const int data[]
             printf("%d\t", feat_index[i]);
         }
         printf("\n");
+        /*
         for (int i = 0; i < NR_FEATURES+1; i++) {
             printf("%f\n", weights[i]);
         }
+        */
     }
 
     return fitness;
