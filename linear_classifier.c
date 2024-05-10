@@ -1,14 +1,15 @@
 #define MAX_EPOCHS 100
 #define SAMPLES 200
-#define VLD_SPLIT 0.3
+#define SPLIT_RATIO 0.8
+#define TRN_SAMPLES (SAMPLES * SPLIT_RATIO)
+#define TST_SAMPLES (SAMPLES - TRN_SAMPLES)
 #define NR_FEATURES 5
-#define LEARNING_RT 0.03
+#define LEARNING_RT 3
 #define RANDOM_INIT_W 1
 #define INPUT_SCL_FCT 1000
 
 #define FRAND_NRM() (((double) rand() / RAND_MAX) * 2.0 - 1.0)
 #define SIGMOID(x) (1 / (1 + exp(-x)))
-#define TRN_SAMPLES (SAMPLES * (1.0 - VLD_SPLIT))
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,70 +19,77 @@
 // Declarations
 double dot_product(const double *a, const double *b, const int vector_size);
 double vec_norm(const double *a, const int vector_size);
-double cross_entropy_loss_vanilla(double y_true, double y_pred);
-double cross_entropy_loss_mod(double y_true, double w_sum);
+double cross_entropy_loss(double y_true, double y_pred);
 double test_model(const int *feat_index, const double *weights, const int data[][SAMPLES], const int *y, const int *order);
 void shuffle_rows(int *randomOrder);
 
 double linearClassifier(const int *feat_index, const int data[][SAMPLES], const int *y)
 {
-    double weights[NR_FEATURES+1]= {0};
+    double X[NR_FEATURES+1] = {0};  // X vector init to all zeroes
+    X[NR_FEATURES] = 1.0;           // Initialize input to bias to one
+    double weights[NR_FEATURES+1] = {0};
     double gradient[NR_FEATURES+1];
-    double loss = 0.0;
-    double best_loss = TRN_SAMPLES;
+    double trn_loss = 0.0;
     static int randomOrder[SAMPLES];
     int epoch = 0;
     static double best = 0.0;
-    int trn_error;
-    int tst_error;
-    double X[NR_FEATURES+1] = {0};
-    double w_sum;
     double fitness = 0.0;
-    double best_fitness = 0.0;
-    /* assign random or zero initial weight values depending on RANDOM_INIT_W flag */
+
+    /* assign random [-1,1] or zero initial weight values depending on RANDOM_INIT_W flag */
     if (RANDOM_INIT_W) {
         for (int i = 0; i < NR_FEATURES+1; i++) {
             weights[i] = FRAND_NRM();
         }
     }
-    /* shuffling rows once to split samples in training and test set*/
+
+    /* shuffle rows once to split samples in training and test set*/
     shuffle_rows(randomOrder);
+
     /* outer loop for every epoch */
     while (epoch++ < MAX_EPOCHS) {
+
+        /* initializations to zero */
         for (int i = 0; i < NR_FEATURES+1; i++) {
             gradient[i] = 0;
         }
-        loss = 0.0;
-        trn_error = 0;
-        tst_error = 0;
+        trn_loss = 0.0;
+
         /* inner loop for every training sample */
         for (int j = 0; j < TRN_SAMPLES; j++) {
             int row = randomOrder[j];
+            /* Load X vector with apropriate values */
             for (int i = 0; i < NR_FEATURES; i++) {
                 X[i] = (double)data[feat_index[i]][row] / INPUT_SCL_FCT;
             }
-            X[NR_FEATURES] = 1.0;
-            int y_true = y[row];
-            w_sum = dot_product(X, weights, NR_FEATURES+1);
-            double output = SIGMOID(w_sum);
-            int y_pred = output > 0.5 ? 1 : -1;
-            loss += cross_entropy_loss_mod(y_true, w_sum);
+
+            /* load label with mapping -1 to 0 and 1 to 1 */
+            int y_true = (y[row] + 1) / 2;
+
+            /* perform dot product of <w,x> */
+            double w_sum = dot_product(weights, X,  NR_FEATURES+1);
+
+            /* apply activation function */
+            double y_pred = SIGMOID(w_sum);
+
+            /* Calculate loss for this sample */
+            trn_loss += cross_entropy_loss(y_true, y_pred);
+
+            /* Calulate gradient for this sample */
             for (int i = 0; i < NR_FEATURES+1; i++) {
-                gradient[i] += X[i] * (output - (y_true + 1) / 2);
+                gradient[i] += X[i] * (y_pred - y_true);
             }
         }
 
         // Update weights (once per epoch)
         for (int i = 0; i < NR_FEATURES+1; i++) {
-            weights[i] -= LEARNING_RT * gradient[i];
-        }
-
-        fitness = test_model(feat_index, weights, data, y, randomOrder);
-        if (fitness > best_fitness) {
-            best_fitness = fitness;
+            weights[i] -= LEARNING_RT * gradient[i] / TRN_SAMPLES;
         }
     }
-    return best_fitness;
+
+    /* Evaluate model after training */
+    fitness = test_model(feat_index, weights, data, y, randomOrder);
+
+    return fitness;
 }
 
 // Function to compute dot product of two vectors
@@ -104,13 +112,8 @@ double vec_norm(const double *a, const int vector_size) {
 
 
 // Cross entropy loss function for {0, 1} labels
-double cross_entropy_loss_vanilla(double y_true, double y_pred) {
-    return - (y_true * log(y_pred) + (1 - y_true) * log(1 - y_pred));
-}
-
-// Cross entropy loss function for {-1, 1} labels
-double cross_entropy_loss_mod(double y_true, double w_sum) {
-    return log(1 + exp(-y_true * w_sum));
+double cross_entropy_loss(double y_true, double y_pred) {
+    return -(y_true * log(y_pred) + (1 - y_true) * log(1 - y_pred));
 }
 
 // Function to shuffle row indices
@@ -132,21 +135,19 @@ void shuffle_rows(int *randomOrder) {
 // Test function
 double test_model(const int *feat_index, const double *weights, const int data[][SAMPLES], const int *y, const int *order) {
     int fp = 0, tp = 0, tn = 0, fn = 0;
-    static double best = 0;
-    double error = 0;
+    static double best = -1.0;
     double X[NR_FEATURES+1] = {0};
-    for (int j = TRN_SAMPLES; j < SAMPLES; j++) {
+    X[NR_FEATURES] = 1.0;
+    for (int j = SAMPLES - TST_SAMPLES; j < SAMPLES; j++) {
             int row = order[j];
             for (int i = 0; i < NR_FEATURES; i++) {
                 X[i] = (double)data[feat_index[i]][row] / 1000;
             }
-            X[NR_FEATURES] = 1.0;
-            int y_true = y[row];
+            int y_true = (y[row] + 1) / 2;
             double w_sum = dot_product(X, weights, NR_FEATURES+1);
             double output = SIGMOID(w_sum);
-            int y_pred = SIGMOID(w_sum) > 0.5 ? 1 : -1;
+            int y_pred = output > 0.5 ? 1 : 0;
             if (y_pred != y_true) {
-                error++;
                 if (y_true == 1) {
                     fn++;
                 } else {
@@ -160,13 +161,27 @@ double test_model(const int *feat_index, const double *weights, const int data[]
                 }
             }
     }
-    double recall = (double)tp / (tp + fn);
-    double precision = (double)tp / (tp + fp);
-    double accuracy = (double) (tp + tn) / (tp + tn + fp + fn);
-    double f_measure = (2 * precision * recall) / (precision + recall);
-    if (f_measure > best) {
-        best = f_measure;
+
+    /* Metric is Mathews Correlation Coefficient */
+    double mcc;
+    double mcc_denom = sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
+    if (mcc_denom == 0.0)
+        mcc = (tp * tn - fp * fn);
+    else
+        mcc = (tp * tn - fp * fn) / mcc_denom;
+    
+    double fitness = mcc;
+    if (fitness > best) {
+        best = fitness;
         printf("[%d\t%d]\n[%d\t%d]\n", tp, fn, fp, tn);
+         for (int i = 0; i < NR_FEATURES; i++) {
+            printf("%d\t", feat_index[i]);
+        }
+        printf("\n");
+        for (int i = 0; i < NR_FEATURES+1; i++) {
+            printf("%f\n", weights[i]);
+        }
     }
-    return f_measure;
+
+    return fitness;
 }

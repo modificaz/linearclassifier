@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "string.h": "c",
-        "functional": "c"
+        "functional": "c",
+        "stdbool.h": "c",
+        "cmath": "c"
     }
 }
