@@ -27,8 +27,8 @@
 
 /* change any of these parameters to match your needs */
 
-#define POPSIZE 50 						     /* Population size                       */
-#define MAXGENS 100 						 /* Maximum number of generations         */
+#define POPSIZE 200 						 /* Population size                       */
+#define MAXGENS 1000 						 /* Maximum number of generations         */
 #define CHROMOSOME_SIZE 13					 /* Chromosome size                       */
 #define NVARS (CHROMOSOME_SIZE * INPUT_SIZE) /* Number of problem variables           */
 #define PXOVER 0.9							 /* Probability of crossover              */
