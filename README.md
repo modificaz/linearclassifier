@@ -3,4 +3,4 @@
 ## Compile with:
 
 ```sh
-gcc .\solution_sga.c .\linear_classifier.c -o .\solution_sga -O3 -lm -march=native
+gcc .\src\solution_sga.c .\src\linear_classifier.c -o .\bin\solution_sga.exe -O3 -Iinclude -lm
