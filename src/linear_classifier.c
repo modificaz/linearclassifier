@@ -32,7 +32,6 @@ double linearClassifier(const int *feat_index, const int data[][SAMPLES], const 
     double trn_loss = 0.0;
     static int randomOrder[SAMPLES];
     int epoch = 0;
-    static double best = 0.0;
     double fitness = 0.0;
 
     /* assign random [-1,1] or zero initial weight values depending on RANDOM_INIT_W flag */
@@ -141,7 +140,6 @@ void shuffle_rows(int *randomOrder) {
 // Test function
 double test_model(const int *feat_index, const double *weights, const int data[][SAMPLES], const int *y, const int *order, int start, int end) {
     int fp = 0, tp = 0, tn = 0, fn = 0;
-    static double best = -1.0;
     double X[NR_FEATURES+1] = {0};
     X[NR_FEATURES] = 1.0;
     double tst_loss = 0.0;
